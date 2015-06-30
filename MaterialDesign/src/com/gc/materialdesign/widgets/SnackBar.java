@@ -3,6 +3,8 @@ package com.gc.materialdesign.widgets;
 import android.app.Activity;
 import android.app.Dialog;
 import android.graphics.Color;
+import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -13,27 +15,29 @@ import android.view.Window;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.gc.materialdesign.R;
-import com.gc.materialdesign.views.ButtonFlat;
 
 public class SnackBar extends Dialog{
-	
+
+	public static final int SHORT = 4 * 1000;
+	public static final int LONG = 8 * 1000;
 	String text;
 	float textSize = 14;//Roboto Regular 14sp 
 	String buttonText;
 	View.OnClickListener onClickListener;
 	Activity activity;
 	View view;
-	ButtonFlat button;
-	int backgroundSnackBar = Color.parseColor("#333333");
-	int backgroundButton = Color.parseColor("#1E88E5");
+	Button button;
+	int backgroundSnackBar = Color.parseColor("#eb333333");
+	private boolean dismissInProgress;
 	
 	OnHideListener onHideListener;
 	// Timer
 	private boolean mIndeterminate = false;
-	private int mTimer = 3 * 1000;
+	private int mTimer = SHORT;
 	
 	// With action button
 	public SnackBar(Activity activity, String text, String buttonText, View.OnClickListener onClickListener) {
@@ -59,13 +63,11 @@ public class SnackBar extends Dialog{
 	    setCanceledOnTouchOutside(false);
 	    ((TextView)findViewById(R.id.text)).setText(text); 
 	    ((TextView)findViewById(R.id.text)).setTextSize(textSize); //set textSize
-		button = (ButtonFlat) findViewById(R.id.buttonflat);
+		button = (Button) findViewById(R.id.buttonflat);
 		if(text == null || onClickListener == null){
 			button.setVisibility(View.GONE);
 		}else{
 			button.setText(buttonText);
-			button.setBackgroundColor(backgroundButton);
-			
 			button.setOnClickListener(new View.OnClickListener() {
 				
 				@Override
@@ -81,9 +83,16 @@ public class SnackBar extends Dialog{
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		final View snackbar = getWindow().getDecorView().findViewById(R.id.snackbar);
+		int[] xy = new int[2];
+		snackbar.getLocationInWindow(xy);
+		RectF rect = new RectF(xy[0], xy[1], xy[0] + snackbar.getWidth(), xy[1] + snackbar.getHeight());
+		if (!rect.contains(event.getX(), event.getY())&& !dismissInProgress) {
+			dismiss();
+		}
 		return activity.dispatchTouchEvent(event);
 	}
-	
+
 	@Override
 	public void onBackPressed() {
 	}
@@ -129,6 +138,7 @@ public class SnackBar extends Dialog{
 	 */
 	@Override
 	public void dismiss() {
+		dismissInProgress = true;
 		Animation anim = AnimationUtils.loadAnimation(activity, R.anim.snackbar_hide_animation);
 		anim.setAnimationListener(new AnimationListener() {
 			
@@ -150,7 +160,6 @@ public class SnackBar extends Dialog{
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		// TODO 自动生成的方法存根
 		 if (keyCode == KeyEvent.KEYCODE_BACK )  {
 			 dismiss();
 		 }
@@ -186,17 +195,7 @@ public class SnackBar extends Dialog{
 		if(view != null)
 			view.setBackgroundColor(color);
 	}
-	
-	/**
-	 * Chage color of FlatButton in Snackbar
-	 * @param color
-	 */
-	public void setColorButton(int color){
-		backgroundButton = color;
-		if(button != null)
-			button.setBackgroundColor(color);
-	}
-	
+
 	/**
 	 * This event start when snackbar dismish without push the button
 	 * @author Navas
